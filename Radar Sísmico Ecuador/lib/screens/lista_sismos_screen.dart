@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../errors/app_exception.dart';
 import '../logic/sismo_logic.dart';
-import '../services/usgs_service.dart';
+import 'detalle_sismo_screen.dart';
+import '../widgets/estado_sismos.dart';
 import '../widgets/tarjeta_sismo.dart';
 
 /// Pantalla que carga, filtra y muestra sismos ordenados por cercanía a Quito.
 class ListaSismosScreen extends StatefulWidget {
-  const ListaSismosScreen({super.key});
+  final Future<List<SismoConDistancia>> futuroSismos;
+  final VoidCallback onReintentar;
+
+  const ListaSismosScreen({
+    super.key,
+    required this.futuroSismos,
+    required this.onReintentar,
+  });
 
   @override
   State<ListaSismosScreen> createState() => _ListaSismosScreenState();
@@ -16,27 +23,7 @@ class ListaSismosScreen extends StatefulWidget {
 class _ListaSismosScreenState extends State<ListaSismosScreen> {
   static const List<double> _opcionesMagnitud = [2.5, 3.0, 4.0, 5.0];
 
-  final UsgsService _usgsService = UsgsService();
-  final SismoLogic _sismoLogic = SismoLogic();
   double _magnitudMinima = 2.5;
-  late Future<List<SismoConDistancia>> _sismosFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _sismosFuture = _cargarSismos();
-  }
-
-  Future<List<SismoConDistancia>> _cargarSismos() async {
-    final sismos = await _usgsService.obtenerSismos();
-    return _sismoLogic.ordenarPorCercania(sismos);
-  }
-
-  void _reintentar() {
-    setState(() {
-      _sismosFuture = _cargarSismos();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,23 +63,10 @@ class _ListaSismosScreenState extends State<ListaSismosScreen> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<SismoConDistancia>>(
-              future: _sismosFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return _EstadoError(
-                    mensaje: _mensajeError(snapshot.error),
-                    onReintentar: _reintentar,
-                  );
-                }
-
-                final sismos = snapshot.data ?? const <SismoConDistancia>[];
+            child: EstadoSismos(
+              futuro: widget.futuroSismos,
+              onReintentar: widget.onReintentar,
+              contenido: (context, sismos) {
                 final sismosFiltrados = sismos.where((item) {
                   final magnitud = item.sismo.magnitud;
                   if (magnitud == null) return _magnitudMinima == 2.5;
@@ -115,8 +89,18 @@ class _ListaSismosScreenState extends State<ListaSismosScreen> {
                   padding: const EdgeInsets.only(top: 4, bottom: 16),
                   itemCount: sismosFiltrados.length,
                   itemBuilder: (context, index) {
+                    final sismoConDistancia = sismosFiltrados[index];
                     return TarjetaSismo(
-                      sismoConDistancia: sismosFiltrados[index],
+                      sismoConDistancia: sismoConDistancia,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => DetalleSismoScreen(
+                              sismoConDistancia: sismoConDistancia,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -124,44 +108,6 @@ class _ListaSismosScreenState extends State<ListaSismosScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  String _mensajeError(Object? error) {
-    if (error is AppException) return error.mensaje;
-    return 'No se pudieron cargar los sismos. Intenta de nuevo.';
-  }
-}
-
-class _EstadoError extends StatelessWidget {
-  final String mensaje;
-  final VoidCallback onReintentar;
-
-  const _EstadoError({
-    required this.mensaje,
-    required this.onReintentar,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 48),
-            const SizedBox(height: 12),
-            Text(mensaje, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: onReintentar,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-          ],
-        ),
       ),
     );
   }

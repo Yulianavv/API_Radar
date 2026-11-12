@@ -7,10 +7,12 @@ import 'colores_alerta.dart';
 /// Tarjeta que resume los datos principales de un sismo.
 class TarjetaSismo extends StatelessWidget {
   final SismoConDistancia sismoConDistancia;
+  final VoidCallback? onTap;
 
   const TarjetaSismo({
     super.key,
     required this.sismoConDistancia,
+    this.onTap,
   });
 
   @override
@@ -23,55 +25,59 @@ class TarjetaSismo extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              magnitud == null
-                  ? 'Magnitud no disponible'
-                  : 'Magnitud ${magnitud.toStringAsFixed(1)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              sismo.lugar,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 8),
-            if (alerta != null)
-              Chip(
-                label: Text(alerta.titulo),
-                backgroundColor: colorDeAlerta(alerta.nivel),
-                visualDensity: VisualDensity.compact,
-              )
-            else
-              const Chip(
-                label: Text('Sin datos para calcular alerta'),
-                visualDensity: VisualDensity.compact,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                magnitud == null
+                    ? 'Magnitud no disponible'
+                    : 'Magnitud ${magnitud.toStringAsFixed(1)}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
-            const SizedBox(height: 4),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                _DatoSismo(
-                  icono: Icons.schedule,
-                  texto: _formatearFecha(sismo.fecha),
+              const SizedBox(height: 4),
+              Text(
+                sismo.lugar,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 8),
+              if (alerta != null)
+                Chip(
+                  label: Text(alerta.titulo),
+                  backgroundColor: colorDeAlerta(alerta.nivel),
+                  visualDensity: VisualDensity.compact,
+                )
+              else
+                const Chip(
+                  label: Text('Sin datos para calcular alerta'),
+                  visualDensity: VisualDensity.compact,
                 ),
-                _DatoSismo(
-                  icono: Icons.place_outlined,
-                  texto:
-                      '${sismoConDistancia.distanciaKm.toStringAsFixed(1)} km',
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  _DatoSismo(
+                    icono: Icons.schedule,
+                    texto: _formatearFecha(sismo.fecha),
+                  ),
+                  _DatoSismo(
+                    icono: Icons.place_outlined,
+                    texto:
+                        '${sismoConDistancia.distanciaKm.toStringAsFixed(1)} km',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

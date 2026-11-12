@@ -7,12 +7,16 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  fl_chart: ^1.3.1
   flutter:
     sdk: flutter
   # Paquete para realizar peticiones HTTP a la API del USGS
+  flutter_map: ^8.3.2
   http: ^1.2.0
   # Paquete para guardar localmente el historial de sismos vistos
+  latlong2: ^0.10.1
   shared_preferences: ^2.2.3
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
