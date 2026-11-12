@@ -6,17 +6,22 @@ import '../logic/alerta_sismo.dart';
 import '../logic/sismo_logic.dart';
 import '../widgets/colores_alerta.dart';
 import '../widgets/estado_sismos.dart';
+import '../widgets/selector_periodo.dart';
 import 'detalle_sismo_screen.dart';
 
 /// Mapa de eventos sísmicos sobre OpenStreetMap.
 class MapaSismosScreen extends StatelessWidget {
   final Future<List<SismoConDistancia>> futuroSismos;
   final VoidCallback onReintentar;
+  final int diasSeleccionados;
+  final ValueChanged<int> onDiasChanged;
 
   const MapaSismosScreen({
     super.key,
     required this.futuroSismos,
     required this.onReintentar,
+    required this.diasSeleccionados,
+    required this.onDiasChanged,
   });
 
   static const LatLng _centroEcuador = LatLng(-1.83, -78.18);
@@ -24,7 +29,15 @@ class MapaSismosScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mapa de sismos')),
+      appBar: AppBar(
+        title: const Text('Mapa de sismos'),
+        actions: [
+          SelectorPeriodo(
+            dias: diasSeleccionados,
+            onChanged: onDiasChanged,
+          ),
+        ],
+      ),
       body: EstadoSismos(
         futuro: futuroSismos,
         onReintentar: onReintentar,

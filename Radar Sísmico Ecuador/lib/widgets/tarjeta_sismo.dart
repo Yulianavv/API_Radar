@@ -22,6 +22,10 @@ class TarjetaSismo extends StatelessWidget {
     final alerta = magnitud == null
         ? null
         : calcularAlerta(magnitud, sismoConDistancia.distanciaKm);
+    final esquema = Theme.of(context).colorScheme;
+    final colorMagnitud = alerta == null
+        ? esquema.secondaryContainer
+        : colorDeAlerta(alerta.nivel);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -33,37 +37,81 @@ class TarjetaSismo extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                magnitud == null
-                    ? 'Magnitud no disponible'
-                    : 'Magnitud ${magnitud.toStringAsFixed(1)}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: colorMagnitud,
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'MAG',
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        Text(
+                          magnitud?.toStringAsFixed(1) ?? 'N/D',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          sismo.lugar,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        const SizedBox(height: 6),
+                        if (alerta != null)
+                          Chip(
+                            avatar: const Icon(Icons.circle, size: 10),
+                            label: Text(alerta.titulo),
+                            backgroundColor: colorMagnitud,
+                            visualDensity: VisualDensity.compact,
+                            side: BorderSide.none,
+                            labelStyle: Theme.of(context).textTheme.labelMedium,
+                          )
+                        else
+                          const Chip(
+                            label: Text('Alerta no disponible'),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (onTap != null)
+                    Icon(
+                      Icons.chevron_right,
+                      color: esquema.onSurfaceVariant,
+                    ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                sismo.lugar,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 8),
-              if (alerta != null)
-                Chip(
-                  label: Text(alerta.titulo),
-                  backgroundColor: colorDeAlerta(alerta.nivel),
-                  visualDensity: VisualDensity.compact,
-                )
-              else
-                const Chip(
-                  label: Text('Sin datos para calcular alerta'),
-                  visualDensity: VisualDensity.compact,
-                ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
+              Divider(height: 1, color: esquema.outlineVariant),
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 16,
-                runSpacing: 8,
+                spacing: 18,
+                runSpacing: 10,
                 children: [
                   _DatoSismo(
                     icono: Icons.schedule,
@@ -72,7 +120,7 @@ class TarjetaSismo extends StatelessWidget {
                   _DatoSismo(
                     icono: Icons.place_outlined,
                     texto:
-                        '${sismoConDistancia.distanciaKm.toStringAsFixed(1)} km',
+                        '${sismoConDistancia.distanciaKm.toStringAsFixed(1)} km de Quito',
                   ),
                 ],
               ),

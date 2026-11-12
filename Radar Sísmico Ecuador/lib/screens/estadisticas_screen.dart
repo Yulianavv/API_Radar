@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../logic/sismo_logic.dart';
 import '../widgets/estado_sismos.dart';
+import '../widgets/selector_periodo.dart';
 import '../widgets/tarjeta_sismo.dart';
 import 'detalle_sismo_screen.dart';
 
@@ -10,21 +11,37 @@ import 'detalle_sismo_screen.dart';
 class EstadisticasScreen extends StatelessWidget {
   final Future<List<SismoConDistancia>> futuroSismos;
   final VoidCallback onReintentar;
+  final int diasSeleccionados;
+  final ValueChanged<int> onDiasChanged;
 
   const EstadisticasScreen({
     super.key,
     required this.futuroSismos,
     required this.onReintentar,
+    required this.diasSeleccionados,
+    required this.onDiasChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Estadísticas')),
+      appBar: AppBar(
+        title: const Text('Estadísticas'),
+        actions: [
+          SelectorPeriodo(
+            dias: diasSeleccionados,
+            onChanged: onDiasChanged,
+          ),
+        ],
+      ),
       body: EstadoSismos(
         futuro: futuroSismos,
         onReintentar: onReintentar,
-        contenido: (context, sismos) => _construirEstadisticas(context, sismos),
+        contenido: (context, sismos) => _construirEstadisticas(
+          context,
+          sismos,
+          diasSeleccionados,
+        ),
       ),
     );
   }
@@ -32,6 +49,7 @@ class EstadisticasScreen extends StatelessWidget {
   Widget _construirEstadisticas(
     BuildContext context,
     List<SismoConDistancia> sismos,
+    int diasSeleccionados,
   ) {
     final conMagnitud =
         sismos.where((item) => item.sismo.magnitud != null).toList()
@@ -46,20 +64,28 @@ class EstadisticasScreen extends StatelessWidget {
             conMagnitud.length;
     final eventoMasFuerte = conMagnitud.isEmpty ? null : conMagnitud.first;
     final topCinco = conMagnitud.take(5).toList();
-
-    final hoy = DateUtils.dateOnly(DateTime.now());
-    final dias = List<DateTime>.generate(
-      7,
-      (indice) => hoy.subtract(Duration(days: 6 - indice)),
+    final agrupacionSemanal = diasSeleccionados == 90;
+    final diasPorGrupo = agrupacionSemanal ? 7 : 1;
+    final cantidadGrupos =
+        (diasSeleccionados + diasPorGrupo - 1) ~/ diasPorGrupo;
+    final inicioPeriodo = DateTime.now().subtract(
+      Duration(days: diasSeleccionados),
     );
-    final conteos = dias.map((dia) {
-      return sismos.where((item) {
-        final fecha = item.sismo.fecha;
-        return fecha.year == dia.year &&
-            fecha.month == dia.month &&
-            fecha.day == dia.day;
-      }).length;
-    }).toList();
+    final etiquetas = List<String>.generate(cantidadGrupos, (indice) {
+      final fechaGrupo = inicioPeriodo.add(
+        Duration(days: indice * diasPorGrupo),
+      );
+      return '${fechaGrupo.day}/${fechaGrupo.month}';
+    });
+    final conteos = List<int>.filled(cantidadGrupos, 0);
+    for (final item in sismos) {
+      final diferencia = item.sismo.fecha.difference(inicioPeriodo);
+      if (diferencia.isNegative) continue;
+      final indice = diferencia.inDays ~/ diasPorGrupo;
+      if (indice < conteos.length) {
+        conteos[indice]++;
+      }
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -84,6 +110,14 @@ class EstadisticasScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        if (diasSeleccionados > 7)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'La consulta está limitada a 200 eventos; si hubo más en el '
+              'periodo, los resultados podrían ser parciales.',
+            ),
+          ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -91,7 +125,7 @@ class EstadisticasScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sismos por día',
+                  agrupacionSemanal ? 'Sismos por semana' : 'Sismos por día',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -99,7 +133,13 @@ class EstadisticasScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 230,
-                  child: _GraficoSismosPorDia(dias: dias, conteos: conteos),
+                  child: _GraficoSismosPorPeriodo(
+                    etiquetas: etiquetas,
+                    conteos: conteos,
+                    mostrarCada: diasSeleccionados == 30
+                        ? 5
+                        : (agrupacionSemanal ? 2 : 1),
+                  ),
                 ),
               ],
             ),
@@ -196,13 +236,15 @@ class _IndicadorEstadistica extends StatelessWidget {
   }
 }
 
-class _GraficoSismosPorDia extends StatelessWidget {
-  final List<DateTime> dias;
+class _GraficoSismosPorPeriodo extends StatelessWidget {
+  final List<String> etiquetas;
   final List<int> conteos;
+  final int mostrarCada;
 
-  const _GraficoSismosPorDia({
-    required this.dias,
+  const _GraficoSismosPorPeriodo({
+    required this.etiquetas,
     required this.conteos,
+    required this.mostrarCada,
   });
 
   @override
@@ -225,7 +267,7 @@ class _GraficoSismosPorDia extends StatelessWidget {
               BarChartRodData(
                 toY: conteos[indice].toDouble(),
                 color: color,
-                width: 16,
+                width: conteos.length > 10 ? 6 : 16,
                 borderRadius: BorderRadius.circular(4),
               ),
             ],
@@ -250,14 +292,17 @@ class _GraficoSismosPorDia extends StatelessWidget {
               reservedSize: 34,
               getTitlesWidget: (valor, meta) {
                 final indice = valor.toInt();
-                if (indice < 0 || indice >= dias.length) {
+                if (indice < 0 || indice >= etiquetas.length) {
                   return const SizedBox.shrink();
                 }
-                final dia = dias[indice];
+                if (indice % mostrarCada != 0 &&
+                    indice != etiquetas.length - 1) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    '${dia.day}/${dia.month}',
+                    etiquetas[indice],
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: textoColor,
                         ),

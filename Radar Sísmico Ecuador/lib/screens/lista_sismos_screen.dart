@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../logic/sismo_logic.dart';
-import 'detalle_sismo_screen.dart';
 import '../widgets/estado_sismos.dart';
+import '../widgets/selector_periodo.dart';
 import '../widgets/tarjeta_sismo.dart';
+import 'detalle_sismo_screen.dart';
 
 /// Pantalla que carga, filtra y muestra sismos ordenados por cercanía a Quito.
 class ListaSismosScreen extends StatefulWidget {
   final Future<List<SismoConDistancia>> futuroSismos;
   final VoidCallback onReintentar;
+  final int diasSeleccionados;
+  final ValueChanged<int> onDiasChanged;
 
   const ListaSismosScreen({
     super.key,
     required this.futuroSismos,
     required this.onReintentar,
+    required this.diasSeleccionados,
+    required this.onDiasChanged,
   });
 
   @override
@@ -30,36 +35,78 @@ class _ListaSismosScreenState extends State<ListaSismosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Radar Sísmico Ecuador'),
+        leading: const Icon(Icons.sensors),
+        actions: [
+          SelectorPeriodo(
+            dias: widget.diasSeleccionados,
+            onChanged: widget.onDiasChanged,
+          ),
+        ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: DropdownButtonFormField<double>(
-              initialValue: _magnitudMinima,
-              decoration: const InputDecoration(
-                labelText: 'Filtrar por magnitud mínima',
-                border: OutlineInputBorder(),
-              ),
-              items: _opcionesMagnitud
-                  .map(
-                    (magnitud) => DropdownMenuItem<double>(
-                      value: magnitud,
-                      child: Text(
-                        magnitud == 2.5
-                            ? 'Todas (≥ 2.5)'
-                            : 'Magnitud ≥ ${magnitud.toStringAsFixed(1)}',
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sismos recientes',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (magnitud) {
-                if (magnitud != null) {
-                  setState(() {
-                    _magnitudMinima = magnitud;
-                  });
-                }
-              },
+                      const SizedBox(height: 3),
+                      Text(
+                        'Ordenados por cercanía a Quito',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.radar,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 28,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: DropdownButtonFormField<double>(
+                  initialValue: _magnitudMinima,
+                  decoration: const InputDecoration(
+                    labelText: 'Magnitud mínima',
+                    prefixIcon: Icon(Icons.tune),
+                  ),
+                  items: _opcionesMagnitud
+                      .map(
+                        (magnitud) => DropdownMenuItem<double>(
+                          value: magnitud,
+                          child: Text(
+                            magnitud == 2.5
+                                ? 'Todas (≥ 2.5)'
+                                : 'Magnitud ≥ ${magnitud.toStringAsFixed(1)}',
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (magnitud) {
+                    if (magnitud != null) {
+                      setState(() {
+                        _magnitudMinima = magnitud;
+                      });
+                    }
+                  },
+                ),
+              ),
             ),
           ),
           Expanded(

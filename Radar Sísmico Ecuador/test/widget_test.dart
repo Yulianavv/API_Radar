@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:radar_sismico_ecuador/logic/sismo_logic.dart';
 import 'package:radar_sismico_ecuador/models/sismo.dart';
+import 'package:radar_sismico_ecuador/screens/estadisticas_screen.dart';
 import 'package:radar_sismico_ecuador/screens/lista_sismos_screen.dart';
 
 void main() {
@@ -38,6 +39,8 @@ void main() {
         home: ListaSismosScreen(
           futuroSismos: Future.value([sismoFuerte, sismoLeve]),
           onReintentar: () {},
+          diasSeleccionados: 7,
+          onDiasChanged: (_) {},
         ),
       ),
     );
@@ -59,5 +62,46 @@ void main() {
 
     expect(find.text('Detalle del sismo'), findsOneWidget);
     expect(find.text('Recomendación de seguridad'), findsOneWidget);
+  });
+
+  testWidgets('el selector comunica el periodo elegido', (tester) async {
+    int? diasElegidos;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ListaSismosScreen(
+          futuroSismos: Future.value(<SismoConDistancia>[]),
+          onReintentar: () {},
+          diasSeleccionados: 7,
+          onDiasChanged: (dias) => diasElegidos = dias,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Cambiar periodo de consulta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Últimos 30 días'));
+    await tester.pumpAndSettle();
+
+    expect(diasElegidos, 30);
+  });
+
+  testWidgets('90 días agrupa el gráfico por semana y advierte el límite',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EstadisticasScreen(
+          futuroSismos: Future.value(<SismoConDistancia>[]),
+          onReintentar: () {},
+          diasSeleccionados: 90,
+          onDiasChanged: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sismos por semana'), findsOneWidget);
+    expect(find.textContaining('limitada a 200 eventos'), findsOneWidget);
   });
 }

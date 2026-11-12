@@ -18,6 +18,7 @@ class _RadarNavegacionScreenState extends State<RadarNavegacionScreen> {
   final UsgsService _usgsService = UsgsService();
   final SismoLogic _sismoLogic = SismoLogic();
   int _indiceSeleccionado = 0;
+  int _diasSeleccionados = 7;
   late Future<List<SismoConDistancia>> _futuroSismos;
 
   @override
@@ -27,8 +28,18 @@ class _RadarNavegacionScreenState extends State<RadarNavegacionScreen> {
   }
 
   Future<List<SismoConDistancia>> _cargarSismos() async {
-    final sismos = await _usgsService.obtenerSismos();
+    final sismos = await _usgsService.obtenerSismos(
+      dias: _diasSeleccionados,
+    );
     return _sismoLogic.ordenarPorCercania(sismos);
+  }
+
+  void _cambiarPeriodo(int dias) {
+    if (dias == _diasSeleccionados) return;
+    setState(() {
+      _diasSeleccionados = dias;
+      _futuroSismos = _cargarSismos();
+    });
   }
 
   void _reintentar() {
@@ -46,14 +57,20 @@ class _RadarNavegacionScreenState extends State<RadarNavegacionScreen> {
           ListaSismosScreen(
             futuroSismos: _futuroSismos,
             onReintentar: _reintentar,
+            diasSeleccionados: _diasSeleccionados,
+            onDiasChanged: _cambiarPeriodo,
           ),
           MapaSismosScreen(
             futuroSismos: _futuroSismos,
             onReintentar: _reintentar,
+            diasSeleccionados: _diasSeleccionados,
+            onDiasChanged: _cambiarPeriodo,
           ),
           EstadisticasScreen(
             futuroSismos: _futuroSismos,
             onReintentar: _reintentar,
+            diasSeleccionados: _diasSeleccionados,
+            onDiasChanged: _cambiarPeriodo,
           ),
         ],
       ),
