@@ -1,0 +1,24 @@
+name: radar_sismico_ecuador
+description: Proyecto universitario Radar Sísmico Ecuador (capa de datos y lógica).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Paquete para realizar peticiones HTTP a la API del USGS
+  http: ^1.2.0
+  # Paquete para guardar localmente el historial de sismos vistos
+  shared_preferences: ^2.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+

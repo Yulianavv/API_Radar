@@ -1,0 +1,9 @@
+# Dart / Flutter generated artifacts
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
